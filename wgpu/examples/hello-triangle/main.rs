@@ -97,6 +97,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 window.request_redraw();
             }
             Event::RedrawRequested(_) => {
+                println!("RedrawRequested");
+
                 let frame = surface
                     .get_current_texture()
                     .expect("Failed to acquire next swap chain texture");

@@ -95,10 +95,12 @@ impl super::Surface {
             let new_layer: mtl::MetalLayer = msg_send![class, new];
             let frame: CGRect = msg_send![main_layer, bounds];
             let () = msg_send![new_layer.as_ref(), setFrame: frame];
+            // On iOS, we have to do this because UIView does not allow you to replace the main layer.
+            // On macOS, replacing the main layer causes NSView's drawRect to never get called,
+            // which winit needs to trigger `RedrawRequested`.
+            let () = msg_send![main_layer, addSublayer: new_layer.as_ref()];
             #[cfg(target_os = "ios")]
             {
-                // Unlike NSView, UIView does not allow to replace main layer.
-                let () = msg_send![main_layer, addSublayer: new_layer.as_ref()];
                 // On iOS, "from_view" may be called before the application initialization is complete,
                 // `msg_send![view, window]` and `msg_send![window, screen]` will get null.
                 let screen: *mut Object = msg_send![class!(UIScreen), mainScreen];
@@ -107,8 +109,7 @@ impl super::Surface {
             };
             #[cfg(target_os = "macos")]
             {
-                let () = msg_send![view, setLayer: new_layer.as_ref()];
-                let () = msg_send![view, setWantsLayer: YES];
+                let () = msg_send![main_layer, setContentsGravity: kCAGravityTopLeft];
                 let () = msg_send![new_layer.as_ref(), setContentsGravity: kCAGravityTopLeft];
                 let window: *mut Object = msg_send![view, window];
                 if !window.is_null() {
